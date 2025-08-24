@@ -1,9 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import '../game/main';
 
 export const Game = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     // El juego se inicializa automáticamente al importar main.ts
     // Kaplay se encarga de crear su propio canvas
@@ -14,14 +12,14 @@ export const Game = () => {
 
   return (
     <div 
-      ref={containerRef}
       style={{ 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         width: '100vw',
         height: '100vh',
-        backgroundColor: '#000'
+        backgroundColor: '#000',
+        imageRendering: 'pixelated'
       }}
     />
   );
