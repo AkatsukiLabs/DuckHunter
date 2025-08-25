@@ -44,31 +44,112 @@ k.loadSound("ui-appear", "./sounds/ui-appear.wav");
 k.loadSound("successful-hunt", "./sounds/successful-hunt.wav");
 k.loadSound("forest-ambiance", "./sounds/forest-ambiance.wav");
 
-k.scene("main-menu", () => {
+k.scene("login", () => {
   k.add([k.sprite("menu")]);
 
   k.add([
-    k.text("CLICK TO START", { font: "nes", size: 8 }),
+    k.text("Enter your name:", { font: "nes", size: 8 }),
     k.anchor("center"),
-    k.pos(k.center().x, k.center().y + 40),
-  ]);
-
-  let bestScore: number = k.getData("best-score") || 0;
-  if (!bestScore) {
-    bestScore = 0;
-    k.setData("best-score", 0);
-  }
-  k.add([
-    k.text(`TOP SCORE = ${formatScore(bestScore, 6)}`, {
-      font: "nes",
-      size: 8,
-    }),
-    k.pos(55, 184),
+    k.pos(k.center().x, k.center().y + 20),
     k.color(COLORS.RED),
   ]);
 
-  k.onClick(() => {
+  k.add([
+    k.rect(160, 20),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 50),
+    k.color(255, 255, 255),
+    k.outline(2, k.Color.fromHex(COLORS.RED)),
+  ]);
+
+  let playerName = "";
+  const nameText = k.add([
+    k.text(playerName, { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 50),
+    k.color(0, 0, 0),
+  ]);
+
+  k.add([
+    k.text("Press ENTER to continue", { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 85),
+    k.color(COLORS.RED),
+  ]);
+
+  k.onCharInput((ch) => {
+    if (playerName.length < 12 && ch.match(/[a-zA-Z0-9]/)) {
+      playerName += ch;
+      nameText.text = playerName;
+    }
+  });
+
+  k.onKeyPress("backspace", () => {
+    if (playerName.length > 0) {
+      playerName = playerName.slice(0, -1);
+      nameText.text = playerName;
+    }
+  });
+
+  k.onKeyPress("enter", () => {
+    if (playerName.trim().length > 0) {
+      k.setData("player-name", playerName.trim());
+      k.go("main-menu");
+    }
+  });
+});
+
+k.scene("main-menu", () => {
+  k.add([k.sprite("menu")]);
+
+  const playerName = k.getData("player-name") || "Player";
+  k.add([
+    k.text(`Welcome, ${playerName}!`, { font: "nes", size: 10 }),
+    k.anchor("center"),
+    k.pos(k.center().x, 125),
+    k.color(COLORS.RED),
+  ]);
+
+  const startButton = k.add([
+    k.rect(140, 25),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 40),
+    k.color(COLORS.BLUE),
+    k.outline(2, k.Color.WHITE),
+    "start-button",
+  ]);
+
+  startButton.add([
+    k.text("START GAME", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  const leaderboardButton = k.add([
+    k.rect(140, 25),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 75),
+    k.color(COLORS.RED),
+    k.outline(2, k.Color.WHITE),
+    "leaderboard-button",
+  ]);
+
+  leaderboardButton.add([
+    k.text("LEADERBOARD", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  k.onClick("start-button", () => {
     k.go("game");
+  });
+
+  k.onClick("leaderboard-button", () => {
+    k.go("leaderboard");
   });
 });
 
@@ -267,17 +348,89 @@ k.scene("game", () => {
   });
 });
 
-k.scene("game-over", () => {
+k.scene("leaderboard", () => {
   k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
+  
   k.add([
-    k.text("GAME OVER!", { font: "nes", size: 8 }),
+    k.text("LEADERBOARD", { font: "nes", size: 10 }),
     k.anchor("center"),
-    k.pos(k.center()),
+    k.pos(k.center().x, 30),
+    k.color(COLORS.RED),
   ]);
 
-  k.wait(2, () => {
+  const leaderboard: Array<{name: string, score: number, date: string}> = k.getData("leaderboard") || [];
+  
+  if (leaderboard.length === 0) {
+    k.add([
+      k.text("No scores yet!", { font: "nes", size: 8 }),
+      k.anchor("center"),
+      k.pos(k.center().x, k.center().y),
+      k.color(255, 255, 255),
+    ]);
+  } else {
+    let yPos = 60;
+    leaderboard.slice(0, 10).forEach((entry: any, index: number) => {
+      const rank = `${index + 1}.`;
+      const name = entry.name.padEnd(8).slice(0, 8);
+      const score = formatScore(entry.score, 6);
+      
+      k.add([
+        k.text(`${rank} ${name} ${score}`, { font: "nes", size: 7 }),
+        k.pos(20, yPos),
+        k.color(index < 3 ? k.Color.fromHex(COLORS.RED) : k.Color.WHITE),
+      ]);
+      
+      yPos += 15;
+    });
+  }
+
+  const backButton = k.add([
+    k.rect(100, 20),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, 190),
+    k.color(COLORS.BLUE),
+    k.outline(2, k.Color.WHITE),
+    "back-button",
+  ]);
+
+  backButton.add([
+    k.text("BACK", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  k.onClick("back-button", () => {
+    k.go("main-menu");
+  });
+
+  k.onKeyPress("escape", () => {
     k.go("main-menu");
   });
 });
 
-k.go("main-menu");
+k.scene("game-over", () => {
+  gameManager.saveScore();
+  
+  k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
+  k.add([
+    k.text("GAME OVER!", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y - 20),
+    k.color(255, 255, 255),
+  ]);
+
+  k.add([
+    k.text(`Final Score: ${formatScore(gameManager.currentScore, 6)}`, { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 10),
+    k.color(COLORS.BEIGE),
+  ]);
+
+  k.wait(3, () => {
+    k.go("main-menu");
+  });
+});
+
+k.go("login");
