@@ -43,6 +43,26 @@ k.loadSound("laughing", "./sounds/laughing.wav");
 k.loadSound("ui-appear", "./sounds/ui-appear.wav");
 k.loadSound("successful-hunt", "./sounds/successful-hunt.wav");
 k.loadSound("forest-ambiance", "./sounds/forest-ambiance.wav");
+k.loadSound("background-music", "./sounds/music.mp3");
+
+// Global background music instance
+let globalBgMusic: any = null;
+
+function startBackgroundMusic() {
+  if (!globalBgMusic || globalBgMusic.paused) {
+    globalBgMusic = k.play("background-music", {
+      volume: 0.3,
+      loop: true,
+    });
+  }
+}
+
+function stopBackgroundMusic() {
+  if (globalBgMusic) {
+    globalBgMusic.stop();
+    globalBgMusic = null;
+  }
+}
 
 k.scene("login", () => {
   k.add([k.sprite("menu")]);
@@ -102,6 +122,8 @@ k.scene("login", () => {
 k.scene("main-menu", () => {
   k.add([k.sprite("menu")]);
 
+  startBackgroundMusic();
+
   const playerName = k.getData("player-name") || "Player";
   k.add([
     k.text(`Welcome, ${playerName}!`, { font: "nes", size: 10 }),
@@ -145,10 +167,12 @@ k.scene("main-menu", () => {
   ]);
 
   k.onClick("start-button", () => {
+    stopBackgroundMusic();
     k.go("game");
   });
 
   k.onClick("leaderboard-button", () => {
+    // Don't stop music when going to leaderboard
     k.go("leaderboard");
   });
 });
@@ -351,6 +375,9 @@ k.scene("game", () => {
 k.scene("leaderboard", () => {
   k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
   
+  // Music should already be playing from main-menu, just ensure it's started
+  startBackgroundMusic();
+  
   k.add([
     k.text("LEADERBOARD", { font: "nes", size: 10 }),
     k.anchor("center"),
@@ -444,10 +471,12 @@ k.scene("leaderboard", () => {
   ]);
 
   k.onClick("back-button", () => {
+    // Don't stop music when going back to main-menu
     k.go("main-menu");
   });
 
   k.onKeyPress("escape", () => {
+    // Don't stop music when going back to main-menu
     k.go("main-menu");
   });
 });
