@@ -43,32 +43,137 @@ k.loadSound("laughing", "./sounds/laughing.wav");
 k.loadSound("ui-appear", "./sounds/ui-appear.wav");
 k.loadSound("successful-hunt", "./sounds/successful-hunt.wav");
 k.loadSound("forest-ambiance", "./sounds/forest-ambiance.wav");
+k.loadSound("background-music", "./sounds/music.mp3");
+
+// Global background music instance
+let globalBgMusic: any = null;
+
+function startBackgroundMusic() {
+  if (!globalBgMusic || globalBgMusic.paused) {
+    globalBgMusic = k.play("background-music", {
+      volume: 0.3,
+      loop: true,
+    });
+  }
+}
+
+function stopBackgroundMusic() {
+  if (globalBgMusic) {
+    globalBgMusic.stop();
+    globalBgMusic = null;
+  }
+}
+
+k.scene("login", () => {
+  k.add([k.sprite("menu")]);
+
+  k.add([
+    k.text("Enter your name:", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 20),
+    k.color(COLORS.RED),
+  ]);
+
+  k.add([
+    k.rect(160, 20),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 50),
+    k.color(255, 255, 255),
+    k.outline(2, k.Color.fromHex(COLORS.RED)),
+  ]);
+
+  let playerName = "";
+  const nameText = k.add([
+    k.text(playerName, { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 50),
+    k.color(0, 0, 0),
+  ]);
+
+  k.add([
+    k.text("Press ENTER to continue", { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 85),
+    k.color(COLORS.RED),
+  ]);
+
+  k.onCharInput((ch) => {
+    if (playerName.length < 12 && ch.match(/[a-zA-Z0-9]/)) {
+      playerName += ch;
+      nameText.text = playerName;
+    }
+  });
+
+  k.onKeyPress("backspace", () => {
+    if (playerName.length > 0) {
+      playerName = playerName.slice(0, -1);
+      nameText.text = playerName;
+    }
+  });
+
+  k.onKeyPress("enter", () => {
+    if (playerName.trim().length > 0) {
+      k.setData("player-name", playerName.trim());
+      k.go("main-menu");
+    }
+  });
+});
 
 k.scene("main-menu", () => {
   k.add([k.sprite("menu")]);
 
-  k.add([
-    k.text("CLICK TO START", { font: "nes", size: 8 }),
-    k.anchor("center"),
-    k.pos(k.center().x, k.center().y + 40),
-  ]);
+  startBackgroundMusic();
 
-  let bestScore: number = k.getData("best-score") || 0;
-  if (!bestScore) {
-    bestScore = 0;
-    k.setData("best-score", 0);
-  }
+  const playerName = k.getData("player-name") || "Player";
   k.add([
-    k.text(`TOP SCORE = ${formatScore(bestScore, 6)}`, {
-      font: "nes",
-      size: 8,
-    }),
-    k.pos(55, 184),
+    k.text(`Welcome, ${playerName}!`, { font: "nes", size: 10 }),
+    k.anchor("center"),
+    k.pos(k.center().x, 125),
     k.color(COLORS.RED),
   ]);
 
-  k.onClick(() => {
+  const startButton = k.add([
+    k.rect(140, 25),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 40),
+    k.color(COLORS.BLUE),
+    k.outline(2, k.Color.WHITE),
+    "start-button",
+  ]);
+
+  startButton.add([
+    k.text("START GAME", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  const leaderboardButton = k.add([
+    k.rect(140, 25),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 75),
+    k.color(COLORS.RED),
+    k.outline(2, k.Color.WHITE),
+    "leaderboard-button",
+  ]);
+
+  leaderboardButton.add([
+    k.text("LEADERBOARD", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  k.onClick("start-button", () => {
+    stopBackgroundMusic();
     k.go("game");
+  });
+
+  k.onClick("leaderboard-button", () => {
+    // Don't stop music when going to leaderboard
+    k.go("leaderboard");
   });
 });
 
@@ -267,17 +372,136 @@ k.scene("game", () => {
   });
 });
 
-k.scene("game-over", () => {
+k.scene("leaderboard", () => {
   k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
+  
+  // Music should already be playing from main-menu, just ensure it's started
+  startBackgroundMusic();
+  
   k.add([
-    k.text("GAME OVER!", { font: "nes", size: 8 }),
+    k.text("LEADERBOARD", { font: "nes", size: 10 }),
     k.anchor("center"),
-    k.pos(k.center()),
+    k.pos(k.center().x, 30),
+    k.color(COLORS.RED),
   ]);
 
-  k.wait(2, () => {
+  const currentPlayerName = String(k.getData("player-name") || "Player");
+  
+  // Mock leaderboard data
+  const mockLeaderboard = [
+    { name: "MARIO", kills: 95, score: 15500 },
+    { name: "LUIGI", kills: 88, score: 14200 },
+    { name: "PEACH", kills: 82, score: 13800 },
+    { name: currentPlayerName.toUpperCase(), kills: 76, score: 12900 },
+    { name: "BOWSER", kills: 71, score: 11700 },
+    { name: "YOSHI", kills: 65, score: 10500 },
+    { name: "TOAD", kills: 58, score: 9300 },
+    { name: "KOOPA", kills: 52, score: 8100 },
+    { name: "GOOMBA", kills: 44, score: 6800 },
+    { name: "SHY GUY", kills: 38, score: 5200 }
+  ];
+
+  // Header
+  k.add([
+    k.text("NAME     KILLS  SCORE", { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, 45),
+    k.color(k.Color.fromHex(COLORS.RED)),
+  ]);
+
+  let yPos = 60;
+  mockLeaderboard.forEach((entry, index) => {
+    const rank = `${index + 1}.`.padEnd(3);
+    const name = entry.name.padEnd(8).slice(0, 8);
+    const kills = entry.kills.toString().padStart(3);
+    const score = formatScore(entry.score, 5);
+    const isCurrentPlayer = entry.name === currentPlayerName.toUpperCase();
+    
+    // Highlight current player with different background
+    if (isCurrentPlayer) {
+      k.add([
+        k.rect(180, 13),
+        k.anchor("center"),
+        k.pos(k.center().x, yPos + 1),
+        k.color(k.Color.fromHex(COLORS.RED)),
+        k.opacity(0.3),
+      ]);
+    }
+    
+    k.add([
+      k.text(`${rank}${name} ${kills}   ${score}`, { font: "nes", size: 6 }),
+      k.anchor("center"),
+      k.pos(k.center().x, yPos),
+      k.color(
+        isCurrentPlayer 
+          ? k.Color.WHITE
+          : index < 3 
+            ? k.Color.fromHex(COLORS.RED) 
+            : k.Color.fromHex(COLORS.BEIGE)
+      ),
+    ]);
+    
+    // Add "YOU" indicator for current player
+    if (isCurrentPlayer) {
+      k.add([
+        k.text("< YOU", { font: "nes", size: 5 }),
+        k.pos(k.center().x + 95, yPos - 3),
+        k.color(k.Color.WHITE),
+      ]);
+    }
+    
+    yPos += 14;
+  });
+
+  const backButton = k.add([
+    k.rect(100, 20),
+    k.area(),
+    k.anchor("center"),
+    k.pos(k.center().x, 210),
+    k.color(COLORS.BLUE),
+    k.outline(2, k.Color.WHITE),
+    "back-button",
+  ]);
+
+  backButton.add([
+    k.text("BACK", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(0, 0),
+    k.color(255, 255, 255),
+  ]);
+
+  k.onClick("back-button", () => {
+    // Don't stop music when going back to main-menu
+    k.go("main-menu");
+  });
+
+  k.onKeyPress("escape", () => {
+    // Don't stop music when going back to main-menu
     k.go("main-menu");
   });
 });
 
-k.go("main-menu");
+k.scene("game-over", () => {
+  gameManager.saveScore();
+  
+  k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
+  k.add([
+    k.text("GAME OVER!", { font: "nes", size: 8 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y - 20),
+    k.color(255, 255, 255),
+  ]);
+
+  k.add([
+    k.text(`Final Score: ${formatScore(gameManager.currentScore, 6)}`, { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, k.center().y + 10),
+    k.color(COLORS.BEIGE),
+  ]);
+
+  k.wait(3, () => {
+    k.go("main-menu");
+  });
+});
+
+k.go("login");
