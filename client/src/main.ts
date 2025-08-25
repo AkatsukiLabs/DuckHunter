@@ -358,37 +358,79 @@ k.scene("leaderboard", () => {
     k.color(COLORS.RED),
   ]);
 
-  const leaderboard: Array<{name: string, score: number, date: string}> = k.getData("leaderboard") || [];
+  const currentPlayerName = String(k.getData("player-name") || "Player");
   
-  if (leaderboard.length === 0) {
-    k.add([
-      k.text("No scores yet!", { font: "nes", size: 8 }),
-      k.anchor("center"),
-      k.pos(k.center().x, k.center().y),
-      k.color(255, 255, 255),
-    ]);
-  } else {
-    let yPos = 60;
-    leaderboard.slice(0, 10).forEach((entry: any, index: number) => {
-      const rank = `${index + 1}.`;
-      const name = entry.name.padEnd(8).slice(0, 8);
-      const score = formatScore(entry.score, 6);
-      
+  // Mock leaderboard data
+  const mockLeaderboard = [
+    { name: "MARIO", kills: 95, score: 15500 },
+    { name: "LUIGI", kills: 88, score: 14200 },
+    { name: "PEACH", kills: 82, score: 13800 },
+    { name: currentPlayerName.toUpperCase(), kills: 76, score: 12900 },
+    { name: "BOWSER", kills: 71, score: 11700 },
+    { name: "YOSHI", kills: 65, score: 10500 },
+    { name: "TOAD", kills: 58, score: 9300 },
+    { name: "KOOPA", kills: 52, score: 8100 },
+    { name: "GOOMBA", kills: 44, score: 6800 },
+    { name: "SHY GUY", kills: 38, score: 5200 }
+  ];
+
+  // Header
+  k.add([
+    k.text("NAME     KILLS  SCORE", { font: "nes", size: 6 }),
+    k.anchor("center"),
+    k.pos(k.center().x, 45),
+    k.color(k.Color.fromHex(COLORS.RED)),
+  ]);
+
+  let yPos = 60;
+  mockLeaderboard.forEach((entry, index) => {
+    const rank = `${index + 1}.`.padEnd(3);
+    const name = entry.name.padEnd(8).slice(0, 8);
+    const kills = entry.kills.toString().padStart(3);
+    const score = formatScore(entry.score, 5);
+    const isCurrentPlayer = entry.name === currentPlayerName.toUpperCase();
+    
+    // Highlight current player with different background
+    if (isCurrentPlayer) {
       k.add([
-        k.text(`${rank} ${name} ${score}`, { font: "nes", size: 7 }),
-        k.pos(20, yPos),
-        k.color(index < 3 ? k.Color.fromHex(COLORS.RED) : k.Color.WHITE),
+        k.rect(180, 13),
+        k.anchor("center"),
+        k.pos(k.center().x, yPos + 1),
+        k.color(k.Color.fromHex(COLORS.RED)),
+        k.opacity(0.3),
       ]);
-      
-      yPos += 15;
-    });
-  }
+    }
+    
+    k.add([
+      k.text(`${rank}${name} ${kills}   ${score}`, { font: "nes", size: 6 }),
+      k.anchor("center"),
+      k.pos(k.center().x, yPos),
+      k.color(
+        isCurrentPlayer 
+          ? k.Color.WHITE
+          : index < 3 
+            ? k.Color.fromHex(COLORS.RED) 
+            : k.Color.fromHex(COLORS.BEIGE)
+      ),
+    ]);
+    
+    // Add "YOU" indicator for current player
+    if (isCurrentPlayer) {
+      k.add([
+        k.text("< YOU", { font: "nes", size: 5 }),
+        k.pos(k.center().x + 95, yPos - 3),
+        k.color(k.Color.WHITE),
+      ]);
+    }
+    
+    yPos += 14;
+  });
 
   const backButton = k.add([
     k.rect(100, 20),
     k.area(),
     k.anchor("center"),
-    k.pos(k.center().x, 190),
+    k.pos(k.center().x, 210),
     k.color(COLORS.BLUE),
     k.outline(2, k.Color.WHITE),
     "back-button",
