@@ -49,10 +49,51 @@ DuckHunter is a browser-based retro-style duck hunting game built with TypeScrip
 - States: menu, cutscene, round-start, round-end, hunt-start, hunt-end, duck-hunted, duck-escaped
 - State transitions managed through `gameManager.enterState()`
 
+## Blockchain Integration
+
+### Technology Stack
+- **Cavos SDK** - Google OAuth authentication and Starknet wallet creation
+- **Dojo Framework** - Smart contract backend on Starknet
+- **Torii** - GraphQL indexer for querying blockchain data
+- **Zustand** - Global state management with persistence
+
+### Authentication Flow
+1. **Google OAuth**: User authenticates via Cavos SDK
+2. **Wallet Creation**: Automatic Starknet wallet generation
+3. **Username Input**: Custom username modal (31 char limit for felt252)
+4. **Player Verification**: Check if player exists in blockchain
+5. **Spawn Player**: Call `spawn_player` contract method if new user
+
+### Contract Integration
+- **Network**: Starknet Mainnet
+- **Methods Used**:
+  - `spawn_player(player_name: felt252)` - Create new player
+  - `update_game(points: u32, kills: u32)` - Update player stats
+
+### Transaction Strategy
+- **Background Processing**: All blockchain transactions happen silently
+- **Optimistic Updates**: UI updates immediately without waiting for confirmation
+- **Per-Shot Transactions**: Each successful duck hit triggers `update_game(10, 1)`
+- **No Loading Interruptions**: Game flow never blocked by blockchain operations
+
+### Data Architecture
+- **Local State**: Optimistic UI updates via Zustand
+- **Blockchain State**: Persistent player data via Dojo contracts
+- **Real-time Queries**: Leaderboard data fetched via Torii GraphQL
+- **Conflict Resolution**: Local optimistic state with blockchain sync
+
+### Key Integration Files
+- `client/src/config/cavosConfig.ts` - Cavos SDK and contract configuration
+- `client/src/config/dojoConfig.ts` - Dojo/Torii connection settings
+- `client/src/store/gameStore.ts` - Zustand store for auth and game state
+- `client/src/hooks/` - Custom hooks for blockchain operations
+- `client/src/services/` - Transaction and query services
+
 ## Development Notes
 
 - The project uses Vite's base path `./` for relative asset loading
 - TypeScript configured with strict mode and comprehensive linting rules
 - Game includes pause functionality (P key) with audio context management
-- Leaderboard system persists to localStorage via KaPlay's `setData()`/`getData()`
+- **Blockchain Integration**: Leaderboard now sourced from Dojo contracts via Torii
+- **Optimistic UX**: All blockchain operations happen in background without interrupting gameplay
 - Background music management across scenes with global instance tracking
