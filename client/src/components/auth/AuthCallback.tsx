@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCavosAuth } from '../../hooks/useCavosAuth';
+import { COLORS } from '../../constant';
 
 interface AuthCallbackProps {
   onAuthComplete: (success: boolean, data?: any) => void;
@@ -55,55 +56,85 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
     setTimeout(handleCallback, 100);
   }, [onAuthComplete, handleGoogleCallback]);
 
-  // Simple loading screen
+  const pixelBoxStyle: React.CSSProperties = {
+    background: COLORS.BEIGE,
+    border: `4px solid ${COLORS.RED}`,
+    borderRadius: '0',
+    boxShadow: `inset -4px -4px 0 rgba(0,0,0,0.3), inset 4px 4px 0 rgba(255,255,255,0.3), 8px 8px 0 rgba(0,0,0,0.5)`,
+    imageRendering: 'pixelated' as const,
+    fontFamily: '"NES", "Courier New", monospace',
+    fontWeight: 'normal',
+    textAlign: 'center' as const
+  };
+
+  // Retro loading screen
   return (
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0, 0, 0, 0.8)',
+      background: '#000000',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 50
+      zIndex: 50,
+      imageRendering: 'pixelated'
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '8px',
-        padding: '24px',
-        textAlign: 'center',
+        ...pixelBoxStyle,
+        padding: '32px',
         maxWidth: '400px',
         width: '90%'
       }}>
-        {/* Simple spinner */}
+        {/* Pixel-style status indicators */}
         {status === "processing" && (
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #f3f4f6',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
+          <>
+            <div style={{
+              fontSize: '32px',
+              margin: '0 auto 16px',
+              color: COLORS.BLUE,
+              textShadow: '2px 2px 0 rgba(0,0,0,0.5)'
+            }}>⏳</div>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              border: `4px solid ${COLORS.RED}`,
+              borderTop: `4px solid ${COLORS.BLUE}`,
+              borderRadius: '0',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px',
+              imageRendering: 'pixelated'
+            }} />
+          </>
         )}
         
         {status === "success" && (
           <div style={{
             fontSize: '48px',
-            color: '#10b981',
-            margin: '0 auto 16px'
-          }}>✅</div>
+            color: COLORS.RED,
+            margin: '0 auto 16px',
+            textShadow: '2px 2px 0 rgba(0,0,0,0.5)'
+          }}></div>
         )}
         
         {status === "error" && (
           <div style={{
             fontSize: '48px',
-            color: '#ef4444',
-            margin: '0 auto 16px'
+            color: COLORS.RED,
+            margin: '0 auto 16px',
+            textShadow: '2px 2px 0 rgba(0,0,0,0.5)'
           }}>❌</div>
         )}
         
-        <p style={{ margin: 0, color: '#374151' }}>{message}</p>
+        <div style={{ 
+          margin: 0, 
+          color: '#333',
+          fontSize: '12px',
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          lineHeight: '1.4'
+        }}>
+          {message}
+        </div>
       </div>
       
       {/* CSS animation for spinner */}

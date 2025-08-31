@@ -3,6 +3,7 @@ import { SignInWithGoogle } from 'cavos-service-sdk';
 import { useCavosAuth } from '../hooks/useCavosAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useGameStore from '../store/gameStore';
+import { COLORS } from '../constant';
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -14,7 +15,6 @@ export function LoginScreen() {
   const [localPlayerName, setLocalPlayerName] = useState('');
   const [showUsernameStep, setShowUsernameStep] = useState(false);
 
-  // Check URL params to see if we should show username step
   useEffect(() => {
     const step = searchParams.get('step');
     if (step === 'username' && isConnected) {
@@ -22,7 +22,6 @@ export function LoginScreen() {
     }
   }, [searchParams, isConnected]);
 
-  // If already connected and has username, redirect to game
   useEffect(() => {
     if (isConnected && playerName) {
       navigate('/game');
@@ -30,7 +29,6 @@ export function LoginScreen() {
   }, [isConnected, playerName, navigate]);
 
   const handleGoogleClick = () => {
-    // Trigger the hidden Cavos button
     const cavosButton = googleButtonRef.current?.querySelector('button');
     if (cavosButton) {
       cavosButton.click();
@@ -47,96 +45,128 @@ export function LoginScreen() {
     }
   };
 
-  // Username step (after Google OAuth)
+  const pixelBoxStyle: React.CSSProperties = {
+    background: COLORS.BEIGE,
+    border: `4px solid ${COLORS.RED}`,
+    borderRadius: '0',
+    boxShadow: `inset -4px -4px 0 rgba(0,0,0,0.3), inset 4px 4px 0 rgba(255,255,255,0.3)`,
+    imageRendering: 'pixelated' as const,
+    fontFamily: '"NES", "Courier New", monospace',
+    fontWeight: 'normal',
+    textAlign: 'center' as const
+  };
+
+  const pixelButtonStyle: React.CSSProperties = {
+    ...pixelBoxStyle,
+    background: COLORS.BLUE,
+    color: COLORS.BEIGE,
+    border: `4px solid ${COLORS.RED}`,
+    padding: '12px 24px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    transition: 'none'
+  };
+
+  const pixelInputStyle: React.CSSProperties = {
+    ...pixelBoxStyle,
+    background: COLORS.BEIGE,
+    color: '#333',
+    padding: '12px',
+    fontSize: '14px',
+    letterSpacing: '1px',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box' as const
+  };
+
+  // Username step
   if (showUsernameStep || (isConnected && !playerName)) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px'
+        padding: '16px',
+        imageRendering: 'pixelated'
       }}>
         <div style={{
-          background: 'white',
-          borderRadius: '12px',
+          ...pixelBoxStyle,
           padding: '32px',
           maxWidth: '400px',
           width: '100%',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          boxShadow: '8px 8px 0 rgba(0,0,0,0.5)'
         }}>
-          <h1 style={{
+          {/* Title with pixel styling */}
+          <div style={{
             fontSize: '24px',
-            fontWeight: 'bold',
-            textAlign: 'center',
+            fontWeight: 'normal',
             marginBottom: '8px',
-            color: '#1f2937'
-          }}>🦆 Duck Hunter</h1>
+            color: COLORS.RED,
+            textShadow: '2px 2px 0 rgba(0,0,0,0.5)',
+            letterSpacing: '2px'
+          }}>
+            DUCK HUNTER
+          </div>
           
-          <p style={{
-            textAlign: 'center',
-            color: '#6b7280',
-            marginBottom: '24px'
-          }}>Choose your hunter name</p>
+          <div style={{
+            fontSize: '12px',
+            color: '#666',
+            marginBottom: '24px',
+            letterSpacing: '1px',
+            textTransform: 'uppercase'
+          }}>
+            Choose your hunter name
+          </div>
 
           <form onSubmit={handleUsernameSubmit}>
+            <div style={{
+              marginBottom: '16px',
+              fontSize: '10px',
+              color: '#666',
+              textAlign: 'left',
+              letterSpacing: '1px'
+            }}>
+            </div>
+            
             <input
               type="text"
               value={localPlayerName}
               onChange={(e) => setLocalPlayerName(e.target.value)}
-              placeholder="Enter your name (max 31 chars)"
+              placeholder="MAX 31 CHARS"
               maxLength={31}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px',
-                marginBottom: '16px',
-                boxSizing: 'border-box'
-              }}
+              style={pixelInputStyle}
               autoFocus
             />
             
             <div style={{
-              display: 'flex',
-              gap: '12px'
+              fontSize: '10px',
+              color: '#666',
+              margin: '8px 0 16px',
+              textAlign: 'right'
             }}>
-              <button
-                type="button"
-                onClick={() => setShowUsernameStep(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  cursor: 'pointer'
-                }}
-              >
-                Back
-              </button>
-              
-              <button
-                type="submit"
-                disabled={!localPlayerName.trim()}
-                style={{
-                  flex: 2,
-                  padding: '12px',
-                  background: localPlayerName.trim() ? '#10b981' : '#d1d5db',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  cursor: localPlayerName.trim() ? 'pointer' : 'not-allowed'
-                }}
-              >
-                Start Hunting!
-              </button>
+              {localPlayerName.length}/31
             </div>
+            
+            <button
+              type="submit"
+              disabled={!localPlayerName.trim()}
+              style={{
+                ...pixelButtonStyle,
+                width: '120px',
+                height: '50px',
+                margin: '0 auto',
+                display: 'block',
+                background: localPlayerName.trim() ? COLORS.BLUE : '#4285f4',
+                cursor: localPlayerName.trim() ? 'pointer' : 'not-allowed',
+                fontSize: '12px'
+              }}
+            >
+              START
+            </button>
           </form>
         </div>
       </div>
@@ -147,33 +177,41 @@ export function LoginScreen() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: '#000000',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '16px'
+      padding: '16px',
+      imageRendering: 'pixelated'
     }}>
       <div style={{
-        background: 'white',
-        borderRadius: '12px',
+        ...pixelBoxStyle,
         padding: '32px',
         maxWidth: '400px',
         width: '100%',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+        boxShadow: '8px 8px 0 rgba(0,0,0,0.5)'
       }}>
-        <h1 style={{
+        {/* Main title with retro styling */}
+        <div style={{
           fontSize: '32px',
-          fontWeight: 'bold',
-          textAlign: 'center',
+          fontWeight: 'normal',
           marginBottom: '8px',
-          color: '#1f2937'
-        }}>🦆 Duck Hunter</h1>
+          color: COLORS.RED,
+          textShadow: '3px 3px 0 rgba(0,0,0,0.5)',
+          letterSpacing: '2px'
+        }}>
+          DUCK HUNTER
+        </div>
         
-        <p style={{
-          textAlign: 'center',
-          color: '#6b7280',
-          marginBottom: '32px'
-        }}>Sign in to start your hunting adventure</p>
+        <div style={{
+          fontSize: '12px',
+          color: '#666',
+          marginBottom: '32px',
+          letterSpacing: '1px',
+          textTransform: 'uppercase'
+        }}>
+          Sign in to start your hunting adventure
+        </div>
 
         {/* Hidden Cavos component */}
         <div 
@@ -192,19 +230,15 @@ export function LoginScreen() {
           />
         </div>
 
-        {/* Custom Google button */}
+        {/* Custom retro Google button */}
         <button
           onClick={handleGoogleClick}
           disabled={loading}
           style={{
+            ...pixelButtonStyle,
             width: '100%',
-            padding: '12px',
-            background: loading ? '#9ca3af' : '#4285f4',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            cursor: loading ? 'not-allowed' : 'pointer',
+            background: loading ? '#666' : '#4285f4',
+            marginBottom: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -214,43 +248,39 @@ export function LoginScreen() {
           {loading ? (
             <>
               <div style={{
-                width: '20px',
-                height: '20px',
-                border: '2px solid #ffffff40',
-                borderTop: '2px solid white',
-                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                border: `2px solid ${COLORS.BEIGE}`,
+                borderTop: `2px solid ${COLORS.RED}`,
+                borderRadius: '0', // Remove border radius for pixel effect
                 animation: 'spin 1s linear infinite'
               }} />
-              Connecting...
+              CONNECTING...
             </>
           ) : (
             <>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Continue with Google
+              <span style={{ fontSize: '16px' }}>G</span>
+              SIGN IN WITH GOOGLE
             </>
           )}
         </button>
-        
-        <p style={{
-          textAlign: 'center',
-          fontSize: '12px',
-          color: '#9ca3af',
-          marginTop: '16px'
-        }}>
-          We'll create a secure wallet for you automatically
-        </p>
       </div>
       
-      {/* Spinner animation */}
+      {/* CSS for animations */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        
+        button:hover:not(:disabled) {
+          transform: translate(-2px, -2px);
+          box-shadow: inset -6px -6px 0 rgba(0,0,0,0.3), inset 6px 6px 0 rgba(255,255,255,0.3), 2px 2px 0 rgba(0,0,0,0.5) !important;
+        }
+        
+        button:active:not(:disabled) {
+          transform: translate(0px, 0px);
+          box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3), inset 2px 2px 0 rgba(255,255,255,0.3) !important;
         }
       `}</style>
     </div>
