@@ -15,15 +15,22 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
   
   // Create canvas element
   const canvas = document.createElement('canvas');
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.display = 'block';
   container.appendChild(canvas);
   
-  // Initialize KaPlay with the canvas
+  // Initialize KaPlay with the canvas - using original config
   const k = kaplay({
-    width: 640,
-    height: 480,
-    canvas: canvas,
+    width: 256,
+    height: 224,
+    letterbox: true,
+    touchToMouse: true,
+    scale: 4,
+    pixelDensity: devicePixelRatio,
     debug: false,
-    crisp: true
+    background: [0, 0, 0],
+    canvas: canvas
   });
 
   // Load all assets

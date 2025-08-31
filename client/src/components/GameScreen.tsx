@@ -44,13 +44,18 @@ export function GameScreen() {
       width: '100vw',
       height: '100vh',
       overflow: 'hidden',
-      background: '#000'
+      background: '#000',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
       <div 
         ref={gameContainerRef}
         style={{
-          width: '100%',
-          height: '100%'
+          width: '1024px',
+          height: '896px',
+          maxWidth: '100vw',
+          maxHeight: '100vh'
         }}
       />
     </div>
