@@ -3,21 +3,25 @@ import useGameStore from '../store/gameStore';
 
 export function GameScreen() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const gameInstanceRef = useRef<any>(null);
   const { playerName, cavos } = useGameStore();
   
   useEffect(() => {
     // Initialize the KaPlay game
     const initializeGame = async () => {
-      // Import and start the existing KaPlay game
-      // We'll modify main.ts to be importable and start the game
-      const { startGame } = await import('../game/main');
-      
-      if (gameContainerRef.current) {
-        // Set the player name in KaPlay's data
-        startGame(gameContainerRef.current, {
-          playerName: playerName,
-          walletAddress: cavos.wallet?.address
-        });
+      if (gameContainerRef.current && !gameInstanceRef.current) {
+        try {
+          const { startGame } = await import('../game/main');
+          
+          gameInstanceRef.current = startGame(gameContainerRef.current, {
+            playerName: playerName,
+            walletAddress: cavos.wallet?.address
+          });
+          
+          console.log('🎮 Game initialized successfully');
+        } catch (error) {
+          console.error('❌ Failed to initialize game:', error);
+        }
       }
     };
 
@@ -25,12 +29,15 @@ export function GameScreen() {
     
     // Cleanup function
     return () => {
-      // Clean up KaPlay instance if needed
-      if (gameContainerRef.current) {
-        gameContainerRef.current.innerHTML = '';
+      if (gameInstanceRef.current) {
+        try {
+          gameInstanceRef.current = null;
+        } catch (error) {
+          console.error('Error cleaning up game:', error);
+        }
       }
     };
-  }, [playerName, cavos.wallet?.address]);
+  }, []); // Remove dependencies to prevent re-initialization
 
   return (
     <div style={{

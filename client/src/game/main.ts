@@ -10,18 +10,21 @@ interface GameOptions {
 }
 
 export function startGame(container: HTMLElement, options: GameOptions = {}) {
-  // Initialize KaPlay with container
+  // Clear container first
+  container.innerHTML = '';
+  
+  // Create canvas element
+  const canvas = document.createElement('canvas');
+  container.appendChild(canvas);
+  
+  // Initialize KaPlay with the canvas
   const k = kaplay({
     width: 640,
     height: 480,
-    canvas: container.querySelector('canvas') || undefined,
+    canvas: canvas,
     debug: false,
+    crisp: true
   });
-
-  // If no canvas exists, append KaPlay's canvas to container
-  if (!container.querySelector('canvas')) {
-    container.appendChild(k.canvas);
-  }
 
   // Load all assets
   k.loadSprite("background", "./graphics/background.png");
