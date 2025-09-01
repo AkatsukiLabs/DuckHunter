@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthCallback } from './components/auth/AuthCallback';
 import { LoginScreen } from './components/LoginScreen';
 import { GameScreen } from './components/GameScreen';
+import { LeaderboardScreen } from './components/LeaderboardScreen';
 import useGameStore from './store/gameStore';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,11 @@ function App() {
         <Route path="/game" element={
           <ProtectedRoute>
             <GameScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/leaderboard" element={
+          <ProtectedRoute>
+            <LeaderboardScreen onBack={() => window.location.href = '/game'} />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Navigate to="/login" replace />} />
