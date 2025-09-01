@@ -150,6 +150,11 @@ const useGameStore = create<GameStore>()(
       },
       
       clearCavosAuth: () => {
+        // Destroy game instance when user logs out
+        import('../game/main').then(({ destroyGame }) => {
+          destroyGame();
+        });
+        
         set(() => ({
           cavos: {
             user: null,

@@ -1,9 +1,6 @@
-import k from "../kaplayCtx";
-import gameManager from "../gameManager";
 import { COLORS } from "../constant";
-import type { GameObj } from "kaplay";
 
-export default function makeDuck(duckId: string, speed: number) {
+export function createDuck(k: any, duckId: string, speed: number, gameManager: any) {
   const startingPos = [
     k.vec2(80, k.center().y + 40),
     k.vec2(k.center().x, k.center().y + 40),
@@ -32,7 +29,9 @@ export default function makeDuck(duckId: string, speed: number) {
       speed,
       quackingSound: null,
       flappingSound: null,
-      setBehavior(this: GameObj) {
+      fallSound: null,
+      
+      setBehavior() {
         this.flyDirection = flyDirections[chosenFlyDirectionIndex];
         // make duck face the correct direction
         if (this.flyDirection.x < 0) this.flipX = true;
@@ -63,6 +62,7 @@ export default function makeDuck(duckId: string, speed: number) {
           }
           this.move(k.vec2(this.flyDirection).scale(this.speed));
         });
+        
         this.onStateEnter("shot", async () => {
           gameManager.nbDucksShotInRound++;
           this.play("shot");
@@ -71,17 +71,20 @@ export default function makeDuck(duckId: string, speed: number) {
           await k.wait(0.2);
           this.enterState("fall");
         });
+        
         this.onStateEnter("fall", () => {
           this.fallSound = k.play("fall", { volume: 0.7 });
           this.play("fall");
         });
+        
         this.onStateUpdate("fall", async () => {
           this.move(0, this.speed);
           if (this.pos.y > k.height() - 70) {
             this.fallSound.stop();
             k.play("impact");
             k.destroy(this);
-            sky.color = k.Color.fromHex(COLORS.BLUE);
+            const sky = k.get("sky")[0];
+            if (sky) sky.color = k.Color.fromHex(COLORS.BLUE);
             const duckIcon = k.get(`duckIcon-${this.duckId}`, {
               recursive: true,
             })[0];
@@ -91,36 +94,34 @@ export default function makeDuck(duckId: string, speed: number) {
             gameManager.enterState("duck-hunted");
           }
         });
+        
         this.onClick(() => {
           if (gameManager.nbBulletsLeft < 0) return;
           gameManager.currentScore += 100;
           
-          // Trigger blockchain transaction for duck hit (non-blocking)
-          try {
-            // Import and call the blockchain trigger function
-            import('../hooks/useGameTransactions').then(({ triggerDuckHitTransaction }) => {
-              triggerDuckHitTransaction(100, 1); // 100 points, 1 kill
-            }).catch(error => {
-              console.log('🦆 Blockchain transaction failed (game continues):', error);
-            });
-          } catch (error) {
-            console.log('🦆 Blockchain integration not available');
-          }
+          // Import the transaction trigger function and call it
+          import('../hooks/useGameTransactions').then(({ triggerDuckHitTransaction }) => {
+            triggerDuckHitTransaction(100, 1); // 100 points, 1 kill
+          }).catch((error) => {
+            console.error('Failed to trigger blockchain transaction:', error);
+          });
           
-          this.play("shot");
           this.enterState("shot");
         });
+        
         const sky = k.get("sky")[0];
         this.loop(1, () => {
           this.flyTimer += 1;
           if (this.flyTimer === this.timeBeforeEscape) {
-            sky.color = k.Color.fromHex(COLORS.BEIGE);
+            if (sky) sky.color = k.Color.fromHex(COLORS.BEIGE);
           }
         });
+        
         this.onExitScreen(() => {
           this.quackingSound.stop();
           this.flappingSound.stop();
-          sky.color = k.Color.fromHex(COLORS.BLUE);
+          const sky = k.get("sky")[0];
+          if (sky) sky.color = k.Color.fromHex(COLORS.BLUE);
           gameManager.nbBulletsLeft = 3;
           gameManager.enterState("duck-escaped");
         });
