@@ -136,7 +136,7 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
 
     const playerName = options.playerName || "Player";
     k.add([
-      k.text(`Welcome, ${playerName}!`, { font: "nes", size: 10 }),
+      k.text(`Welcome, ${playerName}`, { font: "nes", size: 10 }),
       k.anchor("center"),
       k.pos(k.center().x, 125),
       k.color(COLORS.RED),
