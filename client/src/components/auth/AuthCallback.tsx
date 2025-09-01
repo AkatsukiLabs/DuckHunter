@@ -13,11 +13,16 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
   const [message, setMessage] = useState("Processing authentication...");
   const { handleGoogleCallback } = useCavosAuth();
   const { refetch: checkPlayer } = usePlayer();
+  const [hasChecked, setHasChecked] = useState(false);
   const setPlayerVerified = useGameStore(state => state.setPlayerVerified);
 
   useEffect(() => {
+    if (hasChecked) return; // Avoid running multiple times
+    
     const handleCallback = async () => {
       try {
+        setHasChecked(true);
+        
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const userData = urlParams.get("user_data");
@@ -69,8 +74,10 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
       }
     };
 
-    setTimeout(handleCallback, 100);
-  }, [onAuthComplete, handleGoogleCallback, checkPlayer, setPlayerVerified]);
+    if (!hasChecked) {
+      setTimeout(handleCallback, 100);
+    }
+  }, [onAuthComplete, handleGoogleCallback, checkPlayer, setPlayerVerified, hasChecked]);
 
   const pixelBoxStyle: React.CSSProperties = {
     background: COLORS.BEIGE,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { addAddressPadding } from 'starknet';
 
 // Store import
@@ -156,7 +156,7 @@ export const usePlayer = (): UsePlayerReturn => {
   );
 
   // Function to fetch and update player data
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     if (!userAddress) {
       console.log('⚠️ usePlayer: No user address available for fetching');
       setIsLoading(false);
@@ -206,7 +206,7 @@ export const usePlayer = (): UsePlayerReturn => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userAddress]);
 
   // Effect to fetch player data when address changes
   useEffect(() => {
@@ -222,7 +222,7 @@ export const usePlayer = (): UsePlayerReturn => {
       store.setPlayer(null);
       store.setPlayerVerified(false);
     }
-  }, [userAddress]);
+  }, [userAddress, refetch]);
 
   return {
     player,
