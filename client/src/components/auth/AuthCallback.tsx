@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCavosAuth } from '../../hooks/useCavosAuth';
+import { usePlayer } from '../../hooks/usePlayer';
+import useGameStore from '../../store/gameStore';
 import { COLORS } from '../../constant';
 
 interface AuthCallbackProps {
@@ -10,6 +12,8 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [message, setMessage] = useState("Processing authentication...");
   const { handleGoogleCallback } = useCavosAuth();
+  const { refetch: checkPlayer } = usePlayer();
+  const setPlayerVerified = useGameStore(state => state.setPlayerVerified);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -32,12 +36,24 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
           const decodedUserData = decodeURIComponent(userData);
           const parsedUserData = JSON.parse(decodedUserData);
           
-          // Process with the hook
+          // Process with the hook - this sets up Cavos auth
           await handleGoogleCallback(parsedUserData);
+          
+          // Keep the same message while verifying
+          setMessage("Setting up your account...");
+          
+          // Wait a bit for the wallet to be set in store
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check if player exists (silently in background)
+          await checkPlayer();
+          
+          // The usePlayer hook will automatically update isPlayerVerified in the store
+          // We'll let the main app logic handle navigation based on that state
           
           // Show success and redirect
           setStatus("success");
-          setMessage("Authentication successful! Redirecting...");
+          setMessage("Welcome to Duck Hunter!");
           setTimeout(() => onAuthComplete(true, parsedUserData), 1500);
           
         } else {
@@ -54,7 +70,7 @@ export function AuthCallback({ onAuthComplete }: AuthCallbackProps) {
     };
 
     setTimeout(handleCallback, 100);
-  }, [onAuthComplete, handleGoogleCallback]);
+  }, [onAuthComplete, handleGoogleCallback, checkPlayer, setPlayerVerified]);
 
   const pixelBoxStyle: React.CSSProperties = {
     background: COLORS.BEIGE,
