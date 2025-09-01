@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { SignInWithGoogle } from 'cavos-service-sdk';
 import { useCavosAuth } from '../hooks/useCavosAuth';
+import { spawnPlayer } from '../hooks/useCavosTransaction';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useGameStore from '../store/gameStore';
 import { COLORS } from '../constant';
@@ -9,11 +10,12 @@ export function LoginScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { handleGoogleAuth, loading, isConnected } = useCavosAuth();
-  const { setPlayerName, playerName } = useGameStore();
+  const { setPlayerName, playerName, isPlayerVerified, isSpawning, setIsSpawning } = useGameStore();
   
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const [localPlayerName, setLocalPlayerName] = useState('');
   const [showUsernameStep, setShowUsernameStep] = useState(false);
+  const [spawningError, setSpawningError] = useState<string | null>(null);
 
   useEffect(() => {
     const step = searchParams.get('step');
@@ -23,10 +25,15 @@ export function LoginScreen() {
   }, [searchParams, isConnected]);
 
   useEffect(() => {
-    if (isConnected && playerName) {
+    // If connected and player is verified, go to game
+    if (isConnected && isPlayerVerified) {
       navigate('/game');
     }
-  }, [isConnected, playerName, navigate]);
+    // If connected but player is not verified, show username step
+    else if (isConnected && !isPlayerVerified && !showUsernameStep) {
+      setShowUsernameStep(true);
+    }
+  }, [isConnected, isPlayerVerified, navigate, showUsernameStep]);
 
   const handleGoogleClick = () => {
     const cavosButton = googleButtonRef.current?.querySelector('button');
@@ -37,11 +44,34 @@ export function LoginScreen() {
     }
   };
 
-  const handleUsernameSubmit = (e: React.FormEvent) => {
+  const handleUsernameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (localPlayerName.trim().length > 0 && localPlayerName.trim().length <= 31) {
-      setPlayerName(localPlayerName.trim());
-      navigate('/game');
+    const trimmedName = localPlayerName.trim();
+    
+    if (trimmedName.length > 0 && trimmedName.length <= 31) {
+      setPlayerName(trimmedName);
+      setSpawningError(null);
+      
+      try {
+        // Call spawn_player on blockchain
+        console.log('🎮 Spawning player on blockchain:', trimmedName);
+        const txHash = await spawnPlayer(trimmedName);
+        
+        if (txHash) {
+          console.log('✅ Player spawned successfully, tx:', txHash);
+          // Navigate to game after successful spawn
+          navigate('/game');
+        } else {
+          // Even if spawn fails, we can let user play
+          console.warn('⚠️ Spawn transaction failed, but allowing gameplay');
+          navigate('/game');
+        }
+      } catch (error) {
+        console.error('❌ Error spawning player:', error);
+        setSpawningError('Connection issue. You can still play!');
+        // Allow navigation even if registration fails
+        setTimeout(() => navigate('/game'), 2000);
+      }
     }
   };
 
@@ -151,24 +181,64 @@ export function LoginScreen() {
               {localPlayerName.length}/31
             </div>
             
+            {/* Show error message if spawning failed */}
+            {spawningError && (
+              <div style={{
+                fontSize: '10px',
+                color: COLORS.RED,
+                marginBottom: '16px',
+                textAlign: 'center',
+                letterSpacing: '1px'
+              }}>
+                {spawningError}
+              </div>
+            )}
+            
+            {/* Show loading spinner when spawning */}
+            {isSpawning && (
+              <div style={{
+                marginBottom: '16px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  border: `3px solid ${COLORS.RED}`,
+                  borderTop: `3px solid ${COLORS.BLUE}`,
+                  borderRadius: '0',
+                  animation: 'spin 1s linear infinite',
+                  imageRendering: 'pixelated'
+                }} />
+              </div>
+            )}
+            
             <button
               type="submit"
-              disabled={!localPlayerName.trim()}
+              disabled={!localPlayerName.trim() || isSpawning}
               style={{
                 ...pixelButtonStyle,
                 width: '120px',
                 height: '50px',
                 margin: '0 auto',
                 display: 'block',
-                background: localPlayerName.trim() ? COLORS.BLUE : '#4285f4',
-                cursor: localPlayerName.trim() ? 'pointer' : 'not-allowed',
+                background: localPlayerName.trim() && !isSpawning ? COLORS.BLUE : '#4285f4',
+                cursor: localPlayerName.trim() && !isSpawning ? 'pointer' : 'not-allowed',
                 fontSize: '12px'
               }}
             >
-              START
+              {isSpawning ? 'CREATING...' : 'START'}
             </button>
           </form>
         </div>
+        
+        {/* CSS animation for spinner */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }

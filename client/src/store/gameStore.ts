@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Player } from '../dojo/models.gen';
 
 // Types
 interface CavosUser {
@@ -25,14 +26,6 @@ interface CavosAuthState {
   error: string | null;
 }
 
-interface Player {
-  owner: string;
-  name: string;
-  kills: number;
-  points: number;
-  creation_day: number;
-}
-
 interface GameStats {
   currentScore: number;
   totalKills: number;
@@ -53,8 +46,12 @@ interface GameStore {
   // Player
   playerName: string;
   player: Player | null;
+  isPlayerVerified: boolean;
+  isSpawning: boolean;
   setPlayerName: (name: string) => void;
   setPlayer: (player: Player | null) => void;
+  setPlayerVerified: (verified: boolean) => void;
+  setIsSpawning: (spawning: boolean) => void;
   
   // Game Stats (UI optimista)
   gameStats: GameStats;
@@ -96,6 +93,8 @@ const useGameStore = create<GameStore>()(
       // Player state
       playerName: '',
       player: null,
+      isPlayerVerified: false,
+      isSpawning: false,
       
       // Game stats
       gameStats: initialGameStats,
@@ -151,7 +150,7 @@ const useGameStore = create<GameStore>()(
       },
       
       clearCavosAuth: () => {
-        set((state) => ({
+        set(() => ({
           cavos: {
             user: null,
             wallet: null,
@@ -163,6 +162,8 @@ const useGameStore = create<GameStore>()(
           },
           playerName: '',
           player: null,
+          isPlayerVerified: false,
+          isSpawning: false,
           gameStats: initialGameStats
         }));
       },
@@ -170,6 +171,8 @@ const useGameStore = create<GameStore>()(
       // Player Actions
       setPlayerName: (name) => set({ playerName: name }),
       setPlayer: (player) => set({ player }),
+      setPlayerVerified: (verified) => set({ isPlayerVerified: verified }),
+      setIsSpawning: (spawning) => set({ isSpawning: spawning }),
       
       // Game Stats Actions (optimistas para UI)
       updateGameStats: (stats) => {
@@ -211,6 +214,8 @@ const useGameStore = create<GameStore>()(
       partialize: (state) => ({
         cavos: state.cavos,
         playerName: state.playerName,
+        player: state.player,
+        isPlayerVerified: state.isPlayerVerified,
         gameStats: {
           highScore: state.gameStats.highScore // Solo persistir high score
         }
