@@ -1,5 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { SignInWithGoogle } from 'cavos-service-sdk';
+import React, { useState, useEffect } from 'react';
 import { useCavosAuth } from '../hooks/useCavosAuth';
 import { spawnPlayer } from '../hooks/useCavosTransaction';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,9 +9,8 @@ export function LoginScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { handleGoogleAuth, loading, isConnected } = useCavosAuth();
-  const { setPlayerName, playerName, isPlayerVerified, isSpawning, setIsSpawning } = useGameStore();
+  const { setPlayerName, playerName, isPlayerVerified, isSpawning } = useGameStore();
   
-  const googleButtonRef = useRef<HTMLDivElement>(null);
   const [localPlayerName, setLocalPlayerName] = useState('');
   const [showUsernameStep, setShowUsernameStep] = useState(false);
   const [spawningError, setSpawningError] = useState<string | null>(null);
@@ -36,12 +34,9 @@ export function LoginScreen() {
   }, [isConnected, isPlayerVerified, navigate, showUsernameStep]);
 
   const handleGoogleClick = () => {
-    const cavosButton = googleButtonRef.current?.querySelector('button');
-    if (cavosButton) {
-      cavosButton.click();
-    } else {
-      handleGoogleAuth();
-    }
+    // Since SignInWithGoogle component has React 19 conflicts,
+    // we'll directly use the auth hook
+    handleGoogleAuth();
   };
 
   const handleUsernameSubmit = async (e: React.FormEvent) => {
@@ -283,22 +278,8 @@ export function LoginScreen() {
           Sign in to start your hunting adventure
         </div>
 
-        {/* Hidden Cavos component */}
-        <div 
-          ref={googleButtonRef} 
-          style={{ 
-            position: 'absolute', 
-            left: '-9999px', 
-            visibility: 'hidden' 
-          }}
-        >
-          <SignInWithGoogle
-            appId={(import.meta as any).env.VITE_CAVOS_APP_ID || ""}
-            network={(import.meta as any).env.VITE_CAVOS_DEFAULT_NETWORK || "mainnet"}
-            finalRedirectUri={`${window.location.origin}/auth/callback`}
-            text="Continue with Google"
-          />
-        </div>
+        {/* Fallback: Since SignInWithGoogle has React version conflicts, 
+            we'll use direct OAuth flow when clicked */}
 
         {/* Custom retro Google button */}
         <button

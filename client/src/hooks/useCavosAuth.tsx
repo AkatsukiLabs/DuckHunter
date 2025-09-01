@@ -36,12 +36,37 @@ export function useCavosAuth(): UseCavosAuthReturn {
 
   /**
    * Start authentication flow with Google
-   * The SignInWithGoogle component from cavos-service-sdk handles the redirection
+   * Uses Cavos API to get OAuth URL since SignInWithGoogle component has React conflicts
    */
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     console.log('🎯 Initiating Google OAuth flow...');
     setCavosLoading(true);
-    // The SignInWithGoogle component handles the rest
+    
+    try {
+      // Get OAuth URL from Cavos API
+      const response = await fetch(
+        'https://services.cavos.xyz/api/v1/external/auth/google?' +
+        new URLSearchParams({
+          network: 'mainnet', // Using mainnet as per your config
+          final_redirect_uri: `${window.location.origin}/auth/callback`,
+          app_id: appId
+        })
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get OAuth URL: ${response.statusText}`);
+      }
+
+      const { url } = await response.json();
+      console.log('🔗 Redirecting to OAuth:', url);
+      
+      // Redirect to OAuth provider
+      window.location.href = url;
+    } catch (error) {
+      console.error('❌ Failed to initiate OAuth:', error);
+      setCavosError('Failed to start Google login. Please try again.');
+      setCavosLoading(false);
+    }
   };
 
   /**
