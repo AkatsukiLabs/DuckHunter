@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { shortString } from 'starknet';
 import useGameStore from '../store/gameStore';
 import { GameTransactionBridge } from './GameTransactionBridge';
 
@@ -6,7 +7,12 @@ export function GameScreen() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const gameInstanceRef = useRef<any>(null);
   const initializingRef = useRef(false);
-  const { playerName, cavos } = useGameStore();
+  const { playerName: localPlayerName, cavos, player } = useGameStore();
+  
+  // Use player.name from Dojo if available, otherwise use local playerName
+  const playerName = player?.name 
+    ? shortString.decodeShortString('0x' + player.name.toString(16))
+    : localPlayerName;
   
   useEffect(() => {
     const initializeGame = async () => {
@@ -19,11 +25,8 @@ export function GameScreen() {
       if (gameContainerRef.current) {
         try {
           initializingRef.current = true;
-          console.log('🎮 Initializing game...');
-          
           // Use static import to prevent timing issues
           const { startGame } = await import('../game/main');
-          
           const gameInstance = startGame(gameContainerRef.current, {
             playerName: playerName,
             walletAddress: cavos.wallet?.address
@@ -31,7 +34,6 @@ export function GameScreen() {
           
           if (gameInstance) {
             gameInstanceRef.current = gameInstance;
-            console.log('🎮 Game initialized successfully');
           } else {
             console.log('🎮 Game initialization skipped (already exists)');
           }
