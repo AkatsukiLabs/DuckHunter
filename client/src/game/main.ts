@@ -182,7 +182,8 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
     });
 
     k.onClick("leaderboard-button", () => {
-      k.go("leaderboard");
+      // Navigate to React leaderboard component
+      window.location.href = '/leaderboard';
     });
   });
 
