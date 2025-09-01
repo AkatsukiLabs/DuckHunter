@@ -116,12 +116,14 @@ export function useCavosTransaction(): UseCavosTransactionReturn {
  * This is called after successful authentication if the player doesn't exist
  */
 export async function spawnPlayer(username: string): Promise<string | null> {
+  const timestamp = new Date().toLocaleTimeString();
+  
   try {
     const store = useGameStore.getState();
     const { cavos } = store;
     
     if (!cavos.isAuthenticated || !cavos.accessToken || !cavos.wallet) {
-      console.error('Cannot spawn player: Not authenticated');
+      console.error(`❌ [${timestamp}] Cannot spawn player: Not authenticated`);
       return null;
     }
 
@@ -135,7 +137,12 @@ export async function spawnPlayer(username: string): Promise<string | null> {
     // Ensure username is within felt252 limits (31 characters max)
     const playerName = username.slice(0, 31);
     
-    console.log('🎮 Spawning player:', playerName);
+    console.log(`🚀 [${timestamp}] PLAYER SPAWN BLOCKCHAIN TRANSACTION INITIATED`);
+    console.log(`   👤 Player Name: ${playerName}`);
+    console.log(`   🔗 Network: ${network}`);
+    console.log(`   📱 App ID: ${appId}`);
+    console.log(`   💳 Wallet: ${cavos.wallet.address}`);
+    console.log(`   🎯 Contract: ${gameContract}`);
     
     // Mark as spawning in progress
     store.setIsSpawning(true);

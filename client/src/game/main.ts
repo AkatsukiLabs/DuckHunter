@@ -1,27 +1,62 @@
 import kaplay from "kaplay";
 import { COLORS } from "../constant";
-import gameManager from "../gameManager";
 import formatScore from "../utils";
-import makeDog from "../entities/dog";
+import { createGameManager } from "./gameManagerFactory";
+import { createDog } from "./dogFactory";
+import { createDuck } from "./duckFactory";
 
 interface GameOptions {
   playerName?: string;
   walletAddress?: string;
 }
 
+// Global singleton to prevent multiple KAPLAY instances
+let gameInstance: any = null;
+let isDestroyed = false;
+
 export function startGame(container: HTMLElement, options: GameOptions = {}) {
-  // Clear container first
-  container.innerHTML = '';
+  // If already destroyed and trying to reinitialize, reset the destroyed flag
+  if (isDestroyed) {
+    isDestroyed = false;
+    gameInstance = null;
+  }
+
+  // Prevent multiple initializations (synchronous check)
+  if (gameInstance && gameInstance !== 'INITIALIZING') {
+    console.log('🎮 Game instance already exists, attaching to new container');
+    
+    // Move canvas to new container if different
+    if (gameInstance.canvas && gameInstance.canvas.parentNode !== container) {
+      container.innerHTML = '';
+      container.appendChild(gameInstance.canvas);
+    }
+    
+    return gameInstance;
+  }
+
+  if (gameInstance === 'INITIALIZING') {
+    console.log('🎮 Game is already initializing, skipping');
+    return null;
+  }
+
+  // Immediately set a placeholder to prevent race conditions
+  gameInstance = 'INITIALIZING';
   
-  // Create canvas element
-  const canvas = document.createElement('canvas');
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.display = 'block';
-  container.appendChild(canvas);
-  
-  // Initialize KaPlay with the canvas - using original config
-  const k = kaplay({
+  try {
+    // Clear container first
+    container.innerHTML = '';
+    
+    // Create canvas element
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    container.appendChild(canvas);
+    
+    console.log('🎮 Creating new KAPLAY instance...');
+    
+    // Initialize KaPlay with the canvas - using original config
+    const k = kaplay({
     width: 256,
     height: 224,
     letterbox: true,
@@ -151,11 +186,14 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
     });
   });
 
-  // Game scene (keep existing implementation)
+  // Game scene with complete original logic
   k.scene("game", () => {
     k.setCursor("none");
     k.add([k.rect(k.width(), k.height()), k.color(COLORS.BLUE), "sky"]);
     k.add([k.sprite("background"), k.pos(0, -10), k.z(1)]);
+
+    // Create game manager for this scene
+    const gameManager = createGameManager(k);
 
     const score = k.add([
       k.text(formatScore(0, 6), { font: "nes", size: 8 }),
@@ -184,13 +222,14 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
       k.color(0, 0, 0),
     ]);
 
-    const dog = makeDog(k.vec2(0, k.center().y));
+    // Create dog and start searching
+    const dog = createDog(k, k.vec2(0, k.center().y), gameManager);
     dog.searchForDucks();
 
-    // Keep all the existing game logic
+    // All game state controllers exactly like the original
     const roundStartController = gameManager.onStateEnter(
       "round-start",
-      async (isFirstRound) => {
+      async (isFirstRound: boolean) => {
         if (!isFirstRound) gameManager.preySpeed += 50;
         k.play("ui-appear");
         gameManager.currentRoundNb++;
@@ -218,8 +257,98 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
       }
     );
 
-    // ... rest of the game logic (keeping it exactly the same)
-    // We'll integrate blockchain transactions here later
+    const roundEndController = gameManager.onStateEnter("round-end", () => {
+      if (gameManager.nbDucksShotInRound < 6) {
+        k.go("game-over");
+        return;
+      }
+
+      if (gameManager.nbDucksShotInRound === 10) {
+        gameManager.currentScore += 500;
+      }
+
+      gameManager.nbDucksShotInRound = 0;
+      for (const duckIcon of duckIcons.children) {
+        duckIcon.color = k.color(255, 255, 255);
+      }
+      gameManager.enterState("round-start");
+    });
+
+    const huntStartController = gameManager.onStateEnter("hunt-start", () => {
+      gameManager.currentHuntNb++;
+      const duck = createDuck(
+        k,
+        String(gameManager.currentHuntNb - 1),
+        gameManager.preySpeed,
+        gameManager
+      );
+      duck.setBehavior();
+    });
+
+    const huntEndController = gameManager.onStateEnter("hunt-end", () => {
+      const bestScore = Number(k.getData("best-score") || 0);
+
+      if (bestScore < gameManager.currentScore) {
+        k.setData("best-score", gameManager.currentScore);
+      }
+
+      if (gameManager.currentHuntNb <= 9) {
+        gameManager.enterState("hunt-start");
+        return;
+      }
+
+      gameManager.currentHuntNb = 0;
+      gameManager.enterState("round-end");
+    });
+
+    const duckHuntedController = gameManager.onStateEnter("duck-hunted", () => {
+      gameManager.nbBulletsLeft = 3;
+      dog.catchFallenDuck();
+    });
+
+    const duckEscapedController = gameManager.onStateEnter("duck-escaped", async () => {
+      dog.mockPlayer();
+    });
+
+    // Add the cursor that was missing!
+    const cursor = k.add([
+      k.sprite("cursor"),
+      k.anchor("center"),
+      k.pos(),
+      k.z(3),
+    ]);
+
+    // Original shooting mechanism
+    k.onClick(() => {
+      if (gameManager.state === "hunt-start" && !gameManager.isGamePaused) {
+        // Note: we need to allow nbBulletsLeft to go below zero
+        // so that if cursor overlaps with duck, the duck shot logic
+        // will work. Otherwise, the onClick in the Duck class will
+        // never register a successful hit because the nbBulletsLeft goes
+        // to zero before that onClick runs.
+        if (gameManager.nbBulletsLeft > 0) k.play("gun-shot", { volume: 0.5 });
+        gameManager.nbBulletsLeft--;
+      }
+    });
+
+    // Update loop exactly like original
+    k.onUpdate(() => {
+      score.text = formatScore(gameManager.currentScore, 6);
+      switch (gameManager.nbBulletsLeft) {
+        case 3:
+          bulletUIMask.width = 0;
+          break;
+        case 2:
+          bulletUIMask.width = 8;
+          break;
+        case 1:
+          bulletUIMask.width = 15;
+          break;
+        default:
+          bulletUIMask.width = 22;
+      }
+      cursor.moveTo(k.mousePos());
+    });
 
     const forestAmbianceSound = k.play("forest-ambiance", {
       volume: 0.1,
@@ -229,6 +358,11 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
     k.onSceneLeave(() => {
       forestAmbianceSound.stop();
       roundStartController.cancel();
+      roundEndController.cancel();
+      huntStartController.cancel();
+      huntEndController.cancel();
+      duckHuntedController.cancel();
+      duckEscapedController.cancel();
       gameManager.resetGameState();
     });
 
@@ -252,7 +386,21 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
     });
   });
 
-  // Add other scenes (leaderboard, game-over, etc.)
+  // Game over scene
+  k.scene("game-over", () => {
+    k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
+    k.add([
+      k.text("GAME OVER!", { font: "nes", size: 8 }),
+      k.anchor("center"),
+      k.pos(k.center()),
+    ]);
+
+    k.wait(2, () => {
+      k.go("main-menu");
+    });
+  });
+  
+  // Leaderboard scene
   k.scene("leaderboard", () => {
     k.add([k.rect(k.width(), k.height()), k.color(0, 0, 0)]);
     
@@ -290,5 +438,32 @@ export function startGame(container: HTMLElement, options: GameOptions = {}) {
   // Start with main menu (skip login since it's handled by React)
   k.go("main-menu");
 
+  // Store the game instance globally
+  gameInstance = k;
+
   return k;
+  
+  } catch (error) {
+    console.error('❌ Error initializing KAPLAY:', error);
+    gameInstance = null; // Reset on error
+    throw error;
+  }
+}
+
+export function destroyGame() {
+  if (gameInstance && gameInstance !== 'INITIALIZING') {
+    try {
+      console.log('🧹 Destroying KAPLAY instance...');
+      gameInstance.quit?.();
+      gameInstance = null;
+      isDestroyed = true;
+    } catch (error) {
+      console.warn('Warning during game cleanup:', error);
+      gameInstance = null;
+      isDestroyed = true;
+    }
+  } else {
+    gameInstance = null;
+    isDestroyed = true;
+  }
 }

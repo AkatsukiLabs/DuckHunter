@@ -5,9 +5,7 @@ import App from './App';
 // Get the root element
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
-// Render the app
+// Render the app WITHOUT StrictMode to prevent KAPLAY double initialization
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
